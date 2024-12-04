@@ -18,7 +18,9 @@ public class Sql {
     public Sql append(String query, Object... parameter){
         queryBuilder.append(query);
 
-        Collections.addAll(params, parameter);
+        for(Object param : parameter){
+            params.add(param);
+        }
 
         return this;    // 메서드 체이닝을 위한 자신 반환
     }
@@ -91,17 +93,26 @@ public class Sql {
         try(
                 Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql);
-                ResultSet resultSet = preparedStatement.executeQuery();
-
         ){
-            if (resultSet.next()) { // 결과가 있을 때만 처리
-                Object columnValue = resultSet.getObject(1);
-
-
-                return (Long) columnValue;
+            // 파라미터 설정
+            for (int i = 0; i < params.size(); i++) {
+                preparedStatement.setObject(1 + i, params.get(i));
             }
 
-            return null; // 행 반환
+            try(ResultSet resultSet = preparedStatement.executeQuery(); ){
+                if (resultSet.next()) { // 결과가 있을 때만 처리
+                    ResultSetMetaData metaData = resultSet.getMetaData();
+                    int columnCount = metaData.getColumnCount(); // 컬럼 수 가져오기
+
+                    if(columnCount == 1){
+                        return (Long) resultSet.getObject(1);
+                    } else{
+                        return Long.parseLong(String.valueOf(columnCount));
+                    }
+                }
+
+                return null; // 행 반환
+            }
 
         } catch (SQLException e){
             throw new RuntimeException("Error excuting SQL : " + sql, e);
@@ -119,7 +130,6 @@ public class Sql {
         ){
             if (resultSet.next()) { // 결과가 있을 때만 처리
                 Object columnValue = resultSet.getObject(1);
-
 
                 return (String) columnValue;
             }
