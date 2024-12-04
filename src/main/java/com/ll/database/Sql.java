@@ -1,6 +1,7 @@
 package com.ll.database;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class Sql {
@@ -78,6 +79,32 @@ public class Sql {
             }
 
             return row; // 행 반환
+
+        } catch (SQLException e){
+            throw new RuntimeException("Error excuting SQL : " + sql, e);
+        }
+
+    }
+
+    public LocalDateTime selectDatetime(){
+        String sql = queryBuilder.build();
+
+        try(
+                Connection connection = connectionManager.getConnection();
+                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                ResultSet resultSet = preparedStatement.executeQuery();
+        ){
+            LocalDateTime localDateTime = LocalDateTime.now();
+
+            if(resultSet.next()){
+                // ResultSet에서 TimeStamp가져오기
+                Timestamp timestamp = resultSet.getTimestamp(1);
+
+                // LocalDatetime 변환
+                localDateTime = timestamp.toLocalDateTime();
+            }
+
+            return localDateTime;
 
         } catch (SQLException e){
             throw new RuntimeException("Error excuting SQL : " + sql, e);

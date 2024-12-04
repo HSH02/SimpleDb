@@ -3,6 +3,7 @@ package com.ll.database;
 import org.junit.jupiter.api.*;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -191,22 +192,24 @@ class SimpleDbTest {
         assertThat(articleRow.get("isBlind")).isEqualTo(false);
     }
 
-//    @Test
-//    @DisplayName("selectDatetime")
-//    public void t006() {
-//        Sql sql = simpleDb.genSql();
-//        /*
-//        == rawSql ==
-//        SELECT NOW()
-//        */
-//        sql.append("SELECT NOW()");
-//
-//        LocalDateTime datetime = sql.selectDatetime();
-//
-//        long diff = ChronoUnit.SECONDS.between(datetime, LocalDateTime.now());
-//
-//        assertThat(diff).isLessThanOrEqualTo(1L);
-//    }
+    @Test
+    @DisplayName("selectDatetime")
+    public void t006() {
+        Sql sql = simpleDb.genSql();
+        /*
+        == rawSql ==
+        SELECT NOW()
+        */
+        sql.append("SELECT NOW()");
+
+        LocalDateTime datetime = sql.selectDatetime();
+
+        // dattime과 지금 시간차이 초 단위로 계산
+        long diff = ChronoUnit.SECONDS.between(datetime, LocalDateTime.now());
+
+        // 차이가 1초 이내인지 계산
+        assertThat(diff).isLessThanOrEqualTo(1L);
+    }
 //
 //    @Test
 //    @DisplayName("selectLong")
