@@ -83,7 +83,29 @@ public class Sql {
         } catch (SQLException e){
             throw new RuntimeException("Error excuting SQL : " + sql, e);
         }
+    }
 
+    public Long selectLong() {
+        String sql = queryBuilder.build();
+
+        try(
+                Connection connection = connectionManager.getConnection();
+                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                ResultSet resultSet = preparedStatement.executeQuery();
+
+        ){
+            if (resultSet.next()) { // 결과가 있을 때만 처리
+                Object columnValue = resultSet.getObject(1);
+
+
+                return (Long) columnValue;
+            }
+
+            return null; // 행 반환
+
+        } catch (SQLException e){
+            throw new RuntimeException("Error excuting SQL : " + sql, e);
+        }
     }
 
     public LocalDateTime selectDatetime(){
@@ -179,7 +201,5 @@ public class Sql {
             throw new RuntimeException("Error executing SQL: " + sql, e);
         }
     }
-
-
 
 }
