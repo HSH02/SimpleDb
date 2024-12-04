@@ -15,10 +15,29 @@ public class Sql {
         this.connectionManager = connectionManager;
     }
 
-    public Sql append(String query, Object... parameter){
+    public Sql append(String query, Object... parameters){
         queryBuilder.append(query);
 
-        for(Object param : parameter){
+        for(Object param : parameters){
+            params.add(param);
+        }
+
+        return this;    // 메서드 체이닝을 위한 자신 반환
+    }
+
+    public Sql appendIn(String baseQuery, Object... parameters){
+        if (parameters == null || parameters.length == 0) {
+            throw new IllegalArgumentException("IN clause requires at least one parameter.");
+        }
+
+        String placeholders = String.join(", ",
+                Collections.nCopies(parameters.length, "?"));
+
+        String modifiedQuery = baseQuery.replace("?", placeholders);
+
+        queryBuilder.append(modifiedQuery);
+
+        for(Object param : parameters){
             params.add(param);
         }
 
