@@ -8,6 +8,7 @@ public class Sql {
     private final List<Object> params = new ArrayList<>();
     private final QueryBuilder queryBuilder;
     private final ConnectionManager connectionManager;
+    private boolean devMode = false;
 
     // 생성자 : 객체를 받아 초기화한다.
     public Sql(ConnectionManager connectionManager) {
@@ -15,37 +16,37 @@ public class Sql {
         this.connectionManager = connectionManager;
     }
 
+    public Sql setDevMode(boolean devMode) {
+        this.devMode = devMode;
+        return this; // 메서드 체이닝
+    }
+
     public Sql append(String query, Object... parameters){
+        logDevMode(query, parameters);
         queryBuilder.append(query);
-
-        for(Object param : parameters){
-            params.add(param);
-        }
-
+        params.addAll(Arrays.asList(parameters));
         return this;    // 메서드 체이닝을 위한 자신 반환
     }
 
     public Sql appendIn(String baseQuery, Object... parameters){
+        logDevMode(baseQuery, parameters);
+
         if (parameters == null || parameters.length == 0) {
             throw new IllegalArgumentException("IN clause requires at least one parameter.");
         }
 
-        String placeholders = String.join(", ",
-                Collections.nCopies(parameters.length, "?"));
 
+        String placeholders = String.join(", ", Collections.nCopies(parameters.length, "?"));
         String modifiedQuery = baseQuery.replace("?", placeholders);
-
         queryBuilder.append(modifiedQuery);
-
-        for(Object param : parameters){
-            params.add(param);
-        }
-
-        return this;    // 메서드 체이닝을 위한 자신 반환
+        params.addAll(Arrays.asList(parameters));
+        return this;// 메서드 체이닝을 위한 자신 반환
     }
 
     public List<Map<String, Object>> selectRows(){
         String sql = queryBuilder.build();
+
+        logDevMode(sql, params.toArray());
 
         try(
                 Connection connection = connectionManager.getConnection();
@@ -63,14 +64,12 @@ public class Sql {
             while(resultSet.next()){
                 Map<String, Object> row = new HashMap<>();
 
-                for(int i = 1; i <= columnCount; i++){
-                    String columnName = metaData.getColumnName(i);
-                    Object columnValue = resultSet.getObject(i);
-                    row.put(columnName, columnValue);
+                for (int i = 1; i <= columnCount; i++) {
+                    row.put(metaData.getColumnName(i), resultSet.getObject(i));
                 }
             }
 
-            return rows; //모든 행을 포함한 리스트 반환
+            return rows;
         } catch (SQLException e){
             throw new RuntimeException("Error excuting SQL : " + sql, e);
         }
@@ -79,11 +78,13 @@ public class Sql {
     public Map<String, Object> selectRow(){
         String sql = queryBuilder.build();
 
+        logDevMode(sql, params.toArray());
+
         try(
                 Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql);
-                ResultSet resultSet = preparedStatement.executeQuery();
-            ){
+                ResultSet resultSet = preparedStatement.executeQuery()
+        ){
 
             // 결과를 저장할 행 생성
             Map<String, Object> row = new HashMap<>();
@@ -109,16 +110,18 @@ public class Sql {
     public Long selectLong() {
         String sql = queryBuilder.build();
 
+        logDevMode(sql, params.toArray());
+
         try(
                 Connection connection = connectionManager.getConnection();
-                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                PreparedStatement preparedStatement = connection.prepareStatement(sql)
         ){
             // 파라미터 설정
             for (int i = 0; i < params.size(); i++) {
                 preparedStatement.setObject(1 + i, params.get(i));
             }
 
-            try(ResultSet resultSet = preparedStatement.executeQuery(); ){
+            try(ResultSet resultSet = preparedStatement.executeQuery()){
                 if (resultSet.next()) { // 결과가 있을 때만 처리
                     ResultSetMetaData metaData = resultSet.getMetaData();
                     int columnCount = metaData.getColumnCount(); // 컬럼 수 가져오기
@@ -138,13 +141,45 @@ public class Sql {
         }
     }
 
+    public List<Long> selectLongs() {
+        String sql = queryBuilder.build();
+
+        logDevMode(sql, params.toArray());
+
+        try(
+                Connection connection = connectionManager.getConnection();
+                PreparedStatement preparedStatement = connection.prepareStatement(sql)
+        ){
+            // 파라미터 설정
+            for (int i = 0; i < params.size(); i++) {
+                preparedStatement.setObject(1 + i, params.get(i));
+            }
+
+            try(ResultSet resultSet = preparedStatement.executeQuery() ){
+                List<Long> longArrayList = new ArrayList<>();
+
+
+                while (resultSet.next()) {
+                    longArrayList.add(resultSet.getLong(1));
+                }
+
+                return longArrayList; // 행 반환
+            }
+
+        } catch (SQLException e){
+            throw new RuntimeException("Error excuting SQL : " + sql, e);
+        }
+    }
+
     public String selectString() {
         String sql = queryBuilder.build();
+
+        logDevMode(sql, params.toArray());
 
         try(
                 Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql);
-                ResultSet resultSet = preparedStatement.executeQuery();
+                ResultSet resultSet = preparedStatement.executeQuery()
 
         ){
             if (resultSet.next()) { // 결과가 있을 때만 처리
@@ -163,10 +198,12 @@ public class Sql {
     public Boolean selectBoolean() {
         String sql = queryBuilder.build();
 
+        logDevMode(sql, params.toArray());
+
         try(
                 Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql);
-                ResultSet resultSet = preparedStatement.executeQuery();
+                ResultSet resultSet = preparedStatement.executeQuery()
 
         ){
             if (resultSet.next()) { // 결과가 있을 때만 처리
@@ -190,10 +227,12 @@ public class Sql {
     public LocalDateTime selectDatetime(){
         String sql = queryBuilder.build();
 
+        logDevMode(sql, params.toArray());
+
         try(
                 Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql);
-                ResultSet resultSet = preparedStatement.executeQuery();
+                ResultSet resultSet = preparedStatement.executeQuery()
         ){
             LocalDateTime localDateTime = LocalDateTime.now();
 
@@ -215,6 +254,8 @@ public class Sql {
 
     public long insert(){
         String sql = queryBuilder.build();
+
+        logDevMode(sql, params.toArray());
 
         try(
                 Connection connection = connectionManager.getConnection();
@@ -244,6 +285,8 @@ public class Sql {
     public int update() {
         String sql = queryBuilder.build();
 
+        logDevMode(sql, params.toArray());
+
         try (
                 Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql)
@@ -264,6 +307,8 @@ public class Sql {
     public int delete() {
         String sql = queryBuilder.build();
 
+        logDevMode(sql, params.toArray());
+
         try (
                 Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql)
@@ -280,4 +325,12 @@ public class Sql {
             throw new RuntimeException("Error executing SQL: " + sql, e);
         }
     }
+
+    private void logDevMode(String query, Object... parameters) {
+        if (devMode) {
+            System.out.println("[DEV MODE] Query: " + query);
+            System.out.println("[DEV MODE] Parameters: " + Arrays.toString(parameters));
+        }
+    }
+
 }
