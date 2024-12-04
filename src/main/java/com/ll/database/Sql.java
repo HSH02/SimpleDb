@@ -23,7 +23,7 @@ public class Sql {
     }
 
     public List<Map<String, Object>> selectRows(){
-        String sql = queryBuilder.toString();
+        String sql = queryBuilder.build();
 
         try(
                 Connection connection = connectionManager.getConnection();
@@ -54,8 +54,39 @@ public class Sql {
         }
     }
 
+    public Map<String, Object> selectRow(){
+        String sql = queryBuilder.build();
+
+        try(
+                Connection connection = connectionManager.getConnection();
+                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                ResultSet resultSet = preparedStatement.executeQuery();
+            ){
+
+            // 결과를 저장할 행 생성
+            Map<String, Object> row = new HashMap<>();
+
+            if (resultSet.next()) { // 결과가 있을 때만 처리
+                ResultSetMetaData metaData = resultSet.getMetaData();
+                int columnCount = metaData.getColumnCount(); // 컬럼 수 가져오기
+
+                for (int i = 1; i <= columnCount; i++) { // 인덱스는 1부터 시작
+                    String columnName = metaData.getColumnName(i); // i번째 컬럼 이름
+                    Object columnValue = resultSet.getObject(i);   // i번째 컬럼 값
+                    row.put(columnName, columnValue);
+                }
+            }
+
+            return row; // 행 반환
+
+        } catch (SQLException e){
+            throw new RuntimeException("Error excuting SQL : " + sql, e);
+        }
+
+    }
+
     public long insert(){
-        String sql = queryBuilder.toString();
+        String sql = queryBuilder.build();
 
         try(
                 Connection connection = connectionManager.getConnection();
@@ -83,7 +114,7 @@ public class Sql {
     }
 
     public int update() {
-        String sql = queryBuilder.toString();
+        String sql = queryBuilder.build();
 
         try (
                 Connection connection = connectionManager.getConnection();
@@ -103,7 +134,7 @@ public class Sql {
     }
 
     public int delete() {
-        String sql = queryBuilder.toString();
+        String sql = queryBuilder.build();
 
         try (
                 Connection connection = connectionManager.getConnection();

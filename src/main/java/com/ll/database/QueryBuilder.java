@@ -13,6 +13,11 @@ public class QueryBuilder {
     }
 
     public String build() {
+        return queryBuilder.toString().trim();
+    }
+
+    @Override
+    public String toString() {
         return queryBuilder.toString();
     }
 }
