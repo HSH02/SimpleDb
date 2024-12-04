@@ -141,11 +141,17 @@ public class Sql {
 
         ){
             if (resultSet.next()) { // 결과가 있을 때만 처리
-                Object columnValue = resultSet.getObject(1);
-                return (Boolean) columnValue;
+                Object columnValue = resultSet.getObject(1); // 첫 번째 컬럼 값 가져오기
+
+                if (columnValue instanceof Boolean) {
+                    return (Boolean) columnValue; // Boolean 타입 그대로 반환
+                } else if (columnValue instanceof Number) {
+                    // 숫자 타입 처리 (1 = true, 0 = false)
+                    return ((Number) columnValue).intValue() != 0;
+                }
             }
 
-            return null; // 행 반환
+            return null; // 결과가 없을 때
 
         } catch (SQLException e){
             throw new RuntimeException("Error excuting SQL : " + sql, e);
