@@ -108,6 +108,50 @@ public class Sql {
         }
     }
 
+    public String selectString() {
+        String sql = queryBuilder.build();
+
+        try(
+                Connection connection = connectionManager.getConnection();
+                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                ResultSet resultSet = preparedStatement.executeQuery();
+
+        ){
+            if (resultSet.next()) { // 결과가 있을 때만 처리
+                Object columnValue = resultSet.getObject(1);
+
+
+                return (String) columnValue;
+            }
+
+            return null; // 행 반환
+
+        } catch (SQLException e){
+            throw new RuntimeException("Error excuting SQL : " + sql, e);
+        }
+    }
+
+    public Boolean selectBoolean() {
+        String sql = queryBuilder.build();
+
+        try(
+                Connection connection = connectionManager.getConnection();
+                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                ResultSet resultSet = preparedStatement.executeQuery();
+
+        ){
+            if (resultSet.next()) { // 결과가 있을 때만 처리
+                Object columnValue = resultSet.getObject(1);
+                return (Boolean) columnValue;
+            }
+
+            return null; // 행 반환
+
+        } catch (SQLException e){
+            throw new RuntimeException("Error excuting SQL : " + sql, e);
+        }
+    }
+
     public LocalDateTime selectDatetime(){
         String sql = queryBuilder.build();
 
@@ -201,5 +245,4 @@ public class Sql {
             throw new RuntimeException("Error executing SQL: " + sql, e);
         }
     }
-
 }
