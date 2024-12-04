@@ -1,35 +1,23 @@
-package com.ll.simpleDb;
+package com.ll.database;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Sql {
-    private final List<Object> params;
-    private final StringBuilder queryBuilder;
-    private final SimpleDb simpleDb;
+    private final List<Object> params = new ArrayList<>();
+    private final QueryBuilder queryBuilder;
+    private final ConnectionManager connectionManager;
 
     // 생성자 : 객체를 받아 초기화한다.
-    public Sql(SimpleDb simpleDb) {
-        this.queryBuilder = new StringBuilder();
-        this.params = new ArrayList<Object>();
-        this.simpleDb = simpleDb;
-    }
-
-
-    public Sql append(String query){
-        queryBuilder.append(query).append(" ");
-        return this;  // 메서드 체이닝을 위한 자신 반환
+    public Sql(ConnectionManager connectionManager) {
+        this.queryBuilder = new QueryBuilder();
+        this.connectionManager = connectionManager;
     }
 
     public Sql append(String query, Object... parameter){
-        queryBuilder.append(query).append(" ");
+        queryBuilder.append(query);
 
-        for(Object param : parameter){
-            params.add(param);
-        }
+        Collections.addAll(params, parameter);
 
         return this;    // 메서드 체이닝을 위한 자신 반환
     }
@@ -38,9 +26,9 @@ public class Sql {
         String sql = queryBuilder.toString();
 
         try(
-                Connection connection = DriverManager.getConnection(simpleDb.getUrl(), simpleDb.getUser(), simpleDb.getPassword());
-                PreparedStatement  preparedStatement = connection.prepareStatement(sql);
-                ResultSet resultSet = preparedStatement.executeQuery() // 쿼리 실행 후 결과를 반환
+                Connection connection = connectionManager.getConnection();
+                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                ResultSet resultSet = preparedStatement.executeQuery()
         ) {
             // 결과를 저장할 리스트 생성
             List<Map<String, Object>> rows = new ArrayList<>();
@@ -70,7 +58,7 @@ public class Sql {
         String sql = queryBuilder.toString();
 
         try(
-                Connection connection  = DriverManager.getConnection(simpleDb.getUrl(), simpleDb.getUser(), simpleDb.getPassword());
+                Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)
         ) {
                 // 파라미터 설정
@@ -98,7 +86,7 @@ public class Sql {
         String sql = queryBuilder.toString();
 
         try (
-                Connection connection = DriverManager.getConnection(simpleDb.getUrl(), simpleDb.getUser(), simpleDb.getPassword());
+                Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql)
         ) {
             // 파라미터 설정
@@ -107,8 +95,7 @@ public class Sql {
             }
 
             // 쿼리 실행 및 영향받은 행의 개수 반환
-            int affectedRows = preparedStatement.executeUpdate();
-            return affectedRows;
+            return preparedStatement.executeUpdate();
 
         } catch (SQLException e) {
             throw new RuntimeException("Error executing SQL: " + sql, e);
@@ -119,7 +106,7 @@ public class Sql {
         String sql = queryBuilder.toString();
 
         try (
-                Connection connection = DriverManager.getConnection(simpleDb.getUrl(), simpleDb.getUser(), simpleDb.getPassword());
+                Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql)
         ) {
             // 파라미터 설정
@@ -128,8 +115,7 @@ public class Sql {
             }
 
             // 쿼리 실행 및 영향받은 행의 개수 반환
-            int affectedRows = preparedStatement.executeUpdate();
-            return affectedRows;
+            return preparedStatement.executeUpdate();
 
         } catch (SQLException e) {
             throw new RuntimeException("Error executing SQL: " + sql, e);
