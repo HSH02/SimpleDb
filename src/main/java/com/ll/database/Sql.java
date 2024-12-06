@@ -11,6 +11,7 @@ public class Sql {
     private final List<Object> params = new ArrayList<>();
     private final QueryBuilder queryBuilder;
     private final ConnectionManager connectionManager;
+    private final Connection connection;
     private final DevLogger devLogger;
 
     // 생성자 : 객체를 받아 초기화한다.
@@ -18,6 +19,14 @@ public class Sql {
         this.queryBuilder = new QueryBuilder();
         this.connectionManager = connectionManager;
         this.devLogger = devLogger;
+        connection = connectionManager.getConnection();
+    }
+
+    public Sql(Connection connection, DevLogger devLogger) {
+        this.queryBuilder = new QueryBuilder();
+        this.connectionManager = null;
+        this.devLogger = devLogger;
+        this.connection = connection;
     }
 
     // 나머지 메서드들 유지
@@ -48,7 +57,6 @@ public class Sql {
         devLogger.logQuery(sql, params.toArray());
 
         try(
-                Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)
                 ){
 
